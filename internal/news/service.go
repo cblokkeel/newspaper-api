@@ -2,23 +2,28 @@ package news
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/redis/go-redis/v9"
+
+	"github.com/cblokkeel/newspaper/internal/utils"
 )
 
 type NewsService struct {
-	rdb *redis.Client
-    client *NewsClient
+	rdb    *redis.Client
+	client *NewsClient
 }
 
 func NewNewsService(rdb *redis.Client, client *NewsClient) *NewsService {
 	return &NewsService{
-        rdb,
-        client,
-    }
+		rdb,
+		client,
+	}
 }
 
 type FeedAPIResponse struct {
@@ -28,11 +33,34 @@ type FeedAPIResponse struct {
 }
 
 func (s *NewsService) getSources(ctx context.Context) ([]Source, error) {
-    sources, err := s.client.sources("fr", "tech")
-    if err != nil {
+	language := "fr"
+	category := "tech"
+	redisKey := utils.GetRedisKey("api", "news", fmt.Sprintf("get_sources_%s_%s", language, category))
+
+	if val, _ := s.rdb.Get(ctx, redisKey).Bytes(); val != nil {
+		var sources []Source
+		err := json.Unmarshal(val, &sources)
+		if err != nil {
+		fmt.Println("TODO ADD LOG, ERR HAPPENED", err)
+			return nil, errors.New("")
+		}
+		return sources, nil
+	}
+
+	sources, err := s.client.sources("fr", "tech")
+	if err != nil {
+		return nil, err
+	}
+	serializedSources, err := json.Marshal(sources)
+	if err != nil {
+		fmt.Println("TODO ADD LOG, ERR HAPPENED", err)
+        return nil, err
+	}
+    if err := s.rdb.Set(ctx, redisKey, string(serializedSources), time.Hour * 24 * 30).Err(); err != nil {
+		fmt.Println("TODO ADD LOG, ERR HAPPENED", err)
         return nil, err
     }
-    return sources, nil
+	return sources, nil
 }
 
 func (s *NewsService) getNews(ctx context.Context) ([]FeedAPIResponse, error) {
@@ -74,7 +102,7 @@ func (s *NewsService) getNews(ctx context.Context) ([]FeedAPIResponse, error) {
 			continue
 		}
 		if err != nil {
-            return nil, fmt.Errorf("something went wrong")
+			return nil, fmt.Errorf("something went wrong")
 		}
 		votes := strings.Split(val, ":")
 		upvotes, err := strconv.Atoi(votes[0])
@@ -92,5 +120,5 @@ func (s *NewsService) getNews(ctx context.Context) ([]FeedAPIResponse, error) {
 		})
 
 	}
-    return resp, nil
+	return resp, nil
 }
