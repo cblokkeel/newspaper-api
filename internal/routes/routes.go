@@ -2,6 +2,7 @@ package routes
 
 import (
 	"context"
+	"net/http"
 	"os"
 
 	"github.com/gofiber/fiber/v2"
@@ -24,7 +25,10 @@ func NewRouter() *fiber.App {
 		panic(err)
 	}
 
-    newsSvc := news.NewNewsService(rdb)
+    httpClient := http.DefaultClient
+    newsClient := news.NewNewsClient(httpClient)
+
+    newsSvc := news.NewNewsService(rdb, newsClient)
     newsHandler := news.NewNewsHandler(newsSvc)
 
 	api := app.Group("/api")
@@ -33,7 +37,8 @@ func NewRouter() *fiber.App {
 	})
 
 	newsAPI := api.Group("/news")
-	newsAPI.Get("/", newsHandler.HandleGetNews)
+	newsAPI.Get("/", newsHandler.HandleGetNews) 
+    newsAPI.Get("/sources", newsHandler.HandleGetSources)
 
 	return app
 }

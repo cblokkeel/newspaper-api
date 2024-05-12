@@ -11,20 +11,14 @@ import (
 
 type NewsService struct {
 	rdb *redis.Client
+    client *NewsClient
 }
 
-func NewNewsService(rdb *redis.Client) *NewsService {
+func NewNewsService(rdb *redis.Client, client *NewsClient) *NewsService {
 	return &NewsService{
         rdb,
+        client,
     }
-}
-
-type News struct {
-	ID    string `json:"id"`
-	Title string `json:"title"`
-	Desc  string `json:"desc"`
-	Link  string `json:"link"`
-	Img   string `json:"img"`
 }
 
 type FeedAPIResponse struct {
@@ -33,7 +27,15 @@ type FeedAPIResponse struct {
 	Downvotes int  `json:"downvotes"`
 }
 
-func (s *NewsService) GetNews(ctx context.Context) ([]FeedAPIResponse, error) {
+func (s *NewsService) getSources(ctx context.Context) ([]Source, error) {
+    sources, err := s.client.sources("fr", "tech")
+    if err != nil {
+        return nil, err
+    }
+    return sources, nil
+}
+
+func (s *NewsService) getNews(ctx context.Context) ([]FeedAPIResponse, error) {
 	news := []*News{
 		{
 			ID:    "048566e0-edf5-45bc-8645-9f3f9e948e4d",

@@ -17,10 +17,19 @@ func NewNewsHandler(svc *NewsService) *NewsHandler {
 }
 
 func (h *NewsHandler) HandleGetNews(c *fiber.Ctx) error {
-	news, err := h.svc.GetNews(c.Context())
+	news, err := h.svc.getNews(c.Context())
 	if err != nil {
 		return c.SendStatus(http.StatusInternalServerError)
 	}
 
 	return c.JSON(news)
+}
+
+func (h *NewsHandler) HandleGetSources(c *fiber.Ctx) error {
+	sources, err := h.svc.getSources(c.Context())
+	if err != nil {
+		return c.SendStatus(http.StatusInternalServerError)
+	}
+
+	return c.JSON(sources)
 }
