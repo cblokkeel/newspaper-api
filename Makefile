@@ -1,5 +1,5 @@
 build:
-	@go build -o bin/api
+	@go build -C cmd/newspaper -o ../../bin/api
 
 run: build
 	@./bin/api
