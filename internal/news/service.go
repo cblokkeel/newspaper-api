@@ -16,7 +16,7 @@ import (
 
 type NewsService struct {
 	rdb    *redis.Client
-	client *NewsClient
+    mongo 
 }
 
 func NewNewsService(rdb *redis.Client, client *NewsClient) *NewsService {
