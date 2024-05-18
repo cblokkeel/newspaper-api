@@ -26,10 +26,10 @@ func (h *NewsHandler) HandleGetNews(c *fiber.Ctx) error {
 }
 
 func (h *NewsHandler) HandleGetSources(c *fiber.Ctx) error {
-	sources, err := h.svc.getSources(c.Context())
-	if err != nil {
-		return c.SendStatus(http.StatusInternalServerError)
-	}
-
-	return c.JSON(sources)
+	// // sources, err := h.svc.getSources(c.Context())
+	// if err != nil {
+	// 	return c.SendStatus(http.StatusInternalServerError)
+	// }
+	//
+	return c.SendString("todo")
 }

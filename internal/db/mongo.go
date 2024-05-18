@@ -45,9 +45,9 @@ func (m *MongoDB) Exists(ctx context.Context, collName string, filter bson.M) bo
 	return true
 }
 
-func (m *MongoDB) Find(ctx context.Context, collName string, filter bson.M) (*mongo.Cursor, error) {
+func (m *MongoDB) Find(ctx context.Context, collName string, filter bson.M, opts *options.FindOptions) (*mongo.Cursor, error) {
     coll := m.getCollection(collName)
-    return coll.Find(ctx, filter)
+    return coll.Find(ctx, filter, opts)
 }
 
 func (m *MongoDB) Insert(ctx context.Context, collName string, obj interface{}) error {

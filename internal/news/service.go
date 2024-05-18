@@ -2,123 +2,46 @@ package news
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"strconv"
-	"strings"
-	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/cblokkeel/newspaper/internal/utils"
+	"github.com/cblokkeel/newspaper/internal/db"
 )
 
 type NewsService struct {
-	rdb    *redis.Client
-    mongo 
+	rdb   *redis.Client
+	mongo *db.MongoDB
 }
 
-func NewNewsService(rdb *redis.Client, client *NewsClient) *NewsService {
+func NewNewsService(rdb *redis.Client, mongo *db.MongoDB) *NewsService {
 	return &NewsService{
 		rdb,
-		client,
+		mongo,
 	}
 }
 
-type FeedAPIResponse struct {
-	Article   News `json:"article"`
-	Upvotes   int  `json:"upvotes"`
-	Downvotes int  `json:"downvotes"`
-}
-
-func (s *NewsService) getSources(ctx context.Context) ([]Source, error) {
-	language := "fr"
-	category := "tech"
-	redisKey := utils.GetRedisKey("api", "news", fmt.Sprintf("get_sources_%s_%s", language, category))
-
-	if val, _ := s.rdb.Get(ctx, redisKey).Bytes(); val != nil {
-		var sources []Source
-		err := json.Unmarshal(val, &sources)
-		if err != nil {
-		fmt.Println("TODO ADD LOG, ERR HAPPENED", err)
-			return nil, errors.New("")
-		}
-		return sources, nil
-	}
-
-	sources, err := s.client.sources("fr", "tech")
-	if err != nil {
-		return nil, err
-	}
-	serializedSources, err := json.Marshal(sources)
-	if err != nil {
-		fmt.Println("TODO ADD LOG, ERR HAPPENED", err)
-        return nil, err
-	}
-    if err := s.rdb.Set(ctx, redisKey, string(serializedSources), time.Hour * 24 * 30).Err(); err != nil {
-		fmt.Println("TODO ADD LOG, ERR HAPPENED", err)
+func (s *NewsService) getNews(ctx context.Context) ([]Article, error) {
+    var articles []Article
+    // TODO handle pagination
+    findOptions := options.Find()
+    findOptions.SetLimit(20)
+    cursor, err := s.mongo.Find(ctx, "fr_articles", bson.M{}, findOptions)
+    if err != nil {
         return nil, err
     }
-	return sources, nil
-}
 
-func (s *NewsService) getNews(ctx context.Context) ([]FeedAPIResponse, error) {
-	news := []*News{
-		{
-			ID:    "048566e0-edf5-45bc-8645-9f3f9e948e4d",
-			Title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-			Desc:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus eu pulvinar tortor. Fusce placerat ligula ac nisi sollicitudin rhoncus. In volutpat convallis purus id blandit. Cras dapibus consequat dignissim. Morbi condimentum felis dolor. Morbi aliquet, nisi eu cursus elementum, mauris erat ultricies leo, vitae imperdiet metus neque a mi. Curabitur in auctor enim.",
-			Link:  "https://google.com",
-			Img:   "https://leclaireur.fnac.com/wp-content/uploads/2023/10/spiderman7.jpg",
-		},
-		{
-			ID:    "1932b014-d87a-4a84-a358-5c775b9c6bf6",
-			Title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-			Desc:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus eu pulvinar tortor. Fusce placerat ligula ac nisi sollicitudin rhoncus. In volutpat convallis purus id blandit. Cras dapibus consequat dignissim. Morbi condimentum felis dolor. Morbi aliquet, nisi eu cursus elementum, mauris erat ultricies leo, vitae imperdiet metus neque a mi. Curabitur in auctor enim.",
-			Link:  "https://google.com",
-			Img:   "https://leclaireur.fnac.com/wp-content/uploads/2023/10/spiderman7.jpg",
-		},
-		{
-			ID:    "f474f870-1775-43f3-b3c0-bafb95903ce2",
-			Title: "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-			Desc:  "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Phasellus eu pulvinar tortor. Fusce placerat ligula ac nisi sollicitudin rhoncus. In volutpat convallis purus id blandit. Cras dapibus consequat dignissim. Morbi condimentum felis dolor. Morbi aliquet, nisi eu cursus elementum, mauris erat ultricies leo, vitae imperdiet metus neque a mi. Curabitur in auctor enim.",
-			Link:  "https://google.com",
-			Img:   "https://leclaireur.fnac.com/wp-content/uploads/2023/10/spiderman7.jpg",
-		},
-	}
+    for cursor.Next(ctx) {
+        var article db.ArticleModel
+        err := cursor.Decode(&article)
+        if err != nil {
+            // Decide what do
+            return nil, err
+        }
+        articles = append(articles, ArticleFromModel(&article))
+    }
 
-	resp := []FeedAPIResponse{}
-	for _, article := range news {
-		val, err := s.rdb.Get(ctx, article.ID).Result()
-		if err == redis.Nil {
-			if err := s.rdb.Set(ctx, article.ID, "0:0", 0).Err(); err != nil {
-			}
-			resp = append(resp, FeedAPIResponse{
-				Article:   *article,
-				Upvotes:   0,
-				Downvotes: 0,
-			})
-			continue
-		}
-		if err != nil {
-			return nil, fmt.Errorf("something went wrong")
-		}
-		votes := strings.Split(val, ":")
-		upvotes, err := strconv.Atoi(votes[0])
-		if err != nil {
-			upvotes = 0
-		}
-		downvotes, err := strconv.Atoi(votes[1])
-		if err != nil {
-			downvotes = 0
-		}
-		resp = append(resp, FeedAPIResponse{
-			Article:   *article,
-			Upvotes:   upvotes,
-			Downvotes: downvotes,
-		})
-
-	}
-	return resp, nil
+    cursor.Close(ctx)
+    return articles, nil
 }

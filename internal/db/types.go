@@ -1,8 +1,12 @@
 package db
 
-import "time"
+import (
+	"time"
 
-type Feed struct {
+	"go.mongodb.org/mongo-driver/bson/primitive"
+)
+
+type FeedModel struct {
 	ID       string   `bson:"_id"`
 	Name     string   `bson:"name"`
 	Desc     string   `bson:"desc"`
@@ -12,18 +16,25 @@ type Feed struct {
 	Locale   string   `bson:"locale"`
 }
 
-type Source struct {
+type SourceModel struct {
 	Name string `bson:"name"`
 	Icon string `bson:"icon"`
 }
 
-type Article struct {
-	Title     string     `bson:"title"`
-	Desc      string     `bson:"desc"`
-	Link      string     `bson:"link"`
-	Published *time.Time `bson:"published"`
-	Image     string     `bson:"img"`
-	Source    Source     `bson:"source"`
-	Upvotes   int        `bson:"upvotes"`
-	Downvotes int        `bson:"downvotes"`
+type ArticleModel struct {
+	ID        primitive.ObjectID `bson:"_id"`
+	Title     string             `bson:"title"`
+	Desc      string             `bson:"desc"`
+	Link      string             `bson:"link"`
+	Published *time.Time         `bson:"published"`
+	Image     string             `bson:"img"`
+	Source    SourceModel        `bson:"source"`
+	Upvotes   int                `bson:"upvotes"`
+	Downvotes int                `bson:"downvotes"`
+}
+
+type CategoryModel struct {
+	Name   string   `bson:"_id"`
+	Topics []string `bson:"topics"`
+	Locale string   `bson:"locale"`
 }

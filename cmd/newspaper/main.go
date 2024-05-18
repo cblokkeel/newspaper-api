@@ -10,22 +10,19 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/robfig/cron/v3"
 
-	"github.com/cblokkeel/newspaper/internal/db"
+	"github.com/cblokkeel/newspaper/internal/deps"
 	"github.com/cblokkeel/newspaper/internal/routes"
 	rsscron "github.com/cblokkeel/newspaper/internal/rss_cron"
 )
 
 func main() {
 	app := routes.NewRouter()
-	mongo, err := db.NewMongoDB(os.Getenv("MONGO_URI"), os.Getenv("MONGO_DB"))
+    mongo := deps.GetMongo()
 	defer mongo.Disconnect(context.Background())
-	if err != nil {
-		panic(fmt.Errorf("Couldn't connect to mongo"))
-	}
 
 	rssCron := rsscron.NewRSSCron(mongo)
 	c := cron.New()
-	_, err = c.AddFunc("@every 1h", func() {
+    _, err := c.AddFunc("@every 1h", func() {
 		rssCron.Start(context.Background())
 	})
 	if err != nil {

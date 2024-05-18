@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/cblokkeel/newspaper/internal/db"
 	"github.com/mmcdole/gofeed"
@@ -24,7 +25,7 @@ func NewRSSCron(mongo *db.MongoDB) *RSSCron {
 }
 
 func (c *RSSCron) Start(ctx context.Context) {
-	cursor, err := c.mongo.Find(ctx, feeds_coll, bson.M{})
+	cursor, err := c.mongo.Find(ctx, feeds_coll, bson.M{}, options.Find())
 	if err != nil {
 		log.Fatalf("Failed to fetch feeds: %+v", err)
 	}
@@ -33,7 +34,7 @@ func (c *RSSCron) Start(ctx context.Context) {
     fp := gofeed.NewParser()
 
     for cursor.Next(ctx) {
-        var feed db.Feed
+        var feed db.FeedModel
         err := cursor.Decode(&feed)
         if err != nil {
             log.Printf("failed to decode feed: %+v\n", err)
@@ -56,7 +57,7 @@ func (c *RSSCron) Start(ctx context.Context) {
             if (item.Image != nil) {
                 imgLink = item.Image.URL
             }
-            article := &db.Article{
+            article := &db.ArticleModel{
                 Title: item.Title,
                 Desc: item.Description,
                 Link: item.Link,
@@ -64,7 +65,7 @@ func (c *RSSCron) Start(ctx context.Context) {
                 Image: imgLink, 
                 Upvotes: 0,
                 Downvotes: 0,
-                Source: db.Source{
+                Source: db.SourceModel{
                     Name: feed.Name,
                     Icon: "todo",
                 },
