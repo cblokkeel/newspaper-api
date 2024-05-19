@@ -1,4 +1,4 @@
-package db
+package mongo
 
 import (
 	"time"
@@ -31,6 +31,8 @@ type ArticleModel struct {
 	Source    SourceModel        `bson:"source"`
 	Upvotes   int                `bson:"upvotes"`
 	Downvotes int                `bson:"downvotes"`
+	Category  string             `bson:"category"`
+	Topics    []string           `bson:"topics"`
 }
 
 type CategoryModel struct {

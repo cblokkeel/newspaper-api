@@ -3,7 +3,7 @@ package news
 import (
 	"time"
 
-	"github.com/cblokkeel/newspaper/internal/db"
+	"github.com/cblokkeel/newspaper/internal/db/mongo"
 )
 
 type Source struct {
@@ -21,16 +21,17 @@ type Article struct {
 	Source    Source     `json:"source"`
 	Upvotes   int        `json:"upvotes"`
 	Downvotes int        `json:"downvotes"`
+	Category  string     `json:"category"`
 }
 
-func SourceFromModel(model *db.SourceModel) Source {
+func SourceFromModel(model *mongo.SourceModel) Source {
 	return Source{
 		Name: model.Name,
 		Icon: model.Icon,
 	}
 }
 
-func ArticleFromModel(model *db.ArticleModel) Article {
+func ArticleFromModel(model *mongo.ArticleModel) Article {
 	return Article{
 		ID:        model.ID.Hex(),
 		Title:     model.Title,
@@ -41,5 +42,6 @@ func ArticleFromModel(model *db.ArticleModel) Article {
 		Source:    SourceFromModel(&model.Source),
 		Upvotes:   model.Upvotes,
 		Downvotes: model.Downvotes,
+        Category: model.Category,
 	}
 }

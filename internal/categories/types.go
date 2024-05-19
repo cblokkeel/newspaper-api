@@ -1,17 +1,15 @@
 package categories
 
-import "github.com/cblokkeel/newspaper/internal/db"
+import "github.com/cblokkeel/newspaper/internal/db/mongo"
 
 type Category struct {
     Name string `json:"name"`
     Topics []string `json:"topics"`
-    Locale string `json:"locale"`
 }
 
-func CategoryFromModel(model *db.CategoryModel) Category {
+func CategoryFromModel(model *mongo.CategoryModel) Category {
     return Category{
         Name: model.Name,
         Topics: model.Topics,
-        Locale: model.Locale,
     }
 } 

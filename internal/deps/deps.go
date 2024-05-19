@@ -9,7 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 
 	"github.com/cblokkeel/newspaper/internal/categories"
-	"github.com/cblokkeel/newspaper/internal/db"
+	"github.com/cblokkeel/newspaper/internal/db/mongo"
 	"github.com/cblokkeel/newspaper/internal/news"
 )
 
@@ -18,7 +18,7 @@ var lock = &sync.Mutex{}
 // DB
 var (
 	rdbInstance   *redis.Client
-	mongoInstance *db.MongoDB
+	mongoInstance *mongo.MongoDB
 )
 
 // NEWS
@@ -50,11 +50,11 @@ func GetRDB() *redis.Client {
 	return rdbInstance
 }
 
-func GetMongo() *db.MongoDB {
+func GetMongo() *mongo.MongoDB {
 	if mongoInstance != nil {
 		return mongoInstance
 	}
-	m, err := db.NewMongoDB(os.Getenv("MONGO_URI"), os.Getenv("MONGO_DB"))
+	m, err := mongo.NewMongoDB(os.Getenv("MONGO_URI"), os.Getenv("MONGO_DB"))
 	if err != nil {
 		panic(fmt.Errorf("Couldn't connect to mongo"))
 	}

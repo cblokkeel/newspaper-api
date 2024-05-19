@@ -24,7 +24,7 @@ func NewRouter() *fiber.App {
     {
         categoriesAPI := api.Group("/categories")
         categoriesHandler := deps.GetCategoriesHandler()
-        categoriesAPI.Get("/", categoriesHandler.GetLocalisedCategories)
+    categoriesAPI.Get("/", categoriesHandler.GetLocalisedCategories)
     }
 
 	return app

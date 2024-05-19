@@ -8,17 +8,17 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/cblokkeel/newspaper/internal/db"
+	"github.com/cblokkeel/newspaper/internal/db/mongo"
 	"github.com/mmcdole/gofeed"
 )
 
 const feeds_coll = "feeds"
 
 type RSSCron struct {
-	mongo *db.MongoDB
+	mongo *mongo.MongoDB
 }
 
-func NewRSSCron(mongo *db.MongoDB) *RSSCron {
+func NewRSSCron(mongo *mongo.MongoDB) *RSSCron {
 	return &RSSCron{
 		mongo,
 	}
@@ -34,7 +34,7 @@ func (c *RSSCron) Start(ctx context.Context) {
     fp := gofeed.NewParser()
 
     for cursor.Next(ctx) {
-        var feed db.FeedModel
+        var feed mongo.FeedModel
         err := cursor.Decode(&feed)
         if err != nil {
             log.Printf("failed to decode feed: %+v\n", err)
@@ -57,7 +57,7 @@ func (c *RSSCron) Start(ctx context.Context) {
             if (item.Image != nil) {
                 imgLink = item.Image.URL
             }
-            article := &db.ArticleModel{
+            article := &mongo.ArticleModel{
                 Title: item.Title,
                 Desc: item.Description,
                 Link: item.Link,
@@ -65,16 +65,20 @@ func (c *RSSCron) Start(ctx context.Context) {
                 Image: imgLink, 
                 Upvotes: 0,
                 Downvotes: 0,
-                Source: db.SourceModel{
+                Source: mongo.SourceModel{
                     Name: feed.Name,
                     Icon: "todo",
                 },
+                Category: feed.Category,
+                Topics: feed.Topics,
             }
 
             err := c.mongo.Insert(ctx, localizedColl, article)
             if err != nil {
                 log.Printf("failed to insert new article %s: %+v\n", article.Title, err)
             }
+
+            // TODO: create embeddings then send it to vector db
         }
     }
 }

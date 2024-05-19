@@ -7,15 +7,15 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
-	"github.com/cblokkeel/newspaper/internal/db"
+	"github.com/cblokkeel/newspaper/internal/db/mongo"
 )
 
 type NewsService struct {
 	rdb   *redis.Client
-	mongo *db.MongoDB
+	mongo *mongo.MongoDB
 }
 
-func NewNewsService(rdb *redis.Client, mongo *db.MongoDB) *NewsService {
+func NewNewsService(rdb *redis.Client, mongo *mongo.MongoDB) *NewsService {
 	return &NewsService{
 		rdb,
 		mongo,
@@ -33,7 +33,7 @@ func (s *NewsService) getNews(ctx context.Context) ([]Article, error) {
     }
 
     for cursor.Next(ctx) {
-        var article db.ArticleModel
+        var article mongo.ArticleModel
         err := cursor.Decode(&article)
         if err != nil {
             // Decide what do
