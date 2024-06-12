@@ -1,35 +1,37 @@
-package db
+package milvus
 
 import (
 	"context"
+	"time"
 
 	"github.com/milvus-io/milvus-sdk-go/v2/client"
 )
 
 type MilvusDB struct {
-	Client *client.Client
+	Client client.Client
 }
 
-func NewMilvusDB(uri string) (*MilvusDB, error) {
-	client, err := client.NewClient(context.Background(), client.Config{
+func NewMilvusDB(uri string) (MilvusDB, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
+	defer cancel()
+	milvus, err := client.NewClient(ctx, client.Config{
 		Address: uri,
 	})
 	if err != nil {
-		return nil, err
+		return MilvusDB{}, err
 	}
-    exists, err := client.HasCollection(context.Background(), articlesCollName)
-    if err != nil {
-        return nil, err
-    }
+	exists, err := milvus.HasCollection(context.Background(), ArticlesCollName)
+	if err != nil {
+		return MilvusDB{}, err
+	}
 
-    if !exists {
-        if client.CreateCollection(context.Background(), articleSchema, 2) != nil {
-            return nil, err
-        }
-    }
+	if !exists {
+		if milvus.CreateCollection(context.Background(), articleSchema, 2) != nil {
+		    return MilvusDB{}, err
+		}
+	}
 
-	return &MilvusDB{
-		Client: &client,
-	}, nil
+    return MilvusDB{
+		Client: milvus,
+    }, nil
 }
-

@@ -1,4 +1,4 @@
-package db
+package milvus
 
 import "github.com/milvus-io/milvus-sdk-go/v2/entity"
 
@@ -30,7 +30,7 @@ var articleSchema = &entity.Schema{
 			Name:     ArticleVectorField,
 			DataType: entity.FieldTypeFloatVector,
 			TypeParams: map[string]string{
-				"dim": "256",
+				"dim": "1024",
 			},
 		},
 	},

@@ -3,21 +3,21 @@ package categories
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/cblokkeel/newspaper/internal/db/mongo"
+	redisdb "github.com/cblokkeel/newspaper/internal/db/redis"
 )
 
 type CategoriesService struct {
-	rdb   *redis.Client
+	redis   *redisdb.RedisDB
 	mongo *mongo.MongoDB
 }
 
-func NewCategoriesService(rdb *redis.Client, mongo *mongo.MongoDB) *CategoriesService {
+func NewCategoriesService(redis *redisdb.RedisDB, mongo *mongo.MongoDB) *CategoriesService {
 	return &CategoriesService{
-		rdb,
+		redis,
 		mongo,
 	}
 }

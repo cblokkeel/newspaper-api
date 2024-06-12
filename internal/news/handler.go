@@ -16,6 +16,12 @@ func NewNewsHandler(svc *NewsService) *NewsHandler {
 	}
 }
 
+func (h *NewsHandler) Mount(fiber *fiber.App) {
+	group := fiber.Group("/news")
+	group.Get("/", h.HandleGetNews)
+	group.Get("/sources", h.HandleGetSources)
+}
+
 func (h *NewsHandler) HandleGetNews(c *fiber.Ctx) error {
 	news, err := h.svc.getNews(c.Context())
 	if err != nil {

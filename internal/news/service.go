@@ -3,21 +3,21 @@ package news
 import (
 	"context"
 
-	"github.com/redis/go-redis/v9"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 
 	"github.com/cblokkeel/newspaper/internal/db/mongo"
+	redisdb "github.com/cblokkeel/newspaper/internal/db/redis"
 )
 
 type NewsService struct {
-	rdb   *redis.Client
+	redis   *redisdb.RedisDB
 	mongo *mongo.MongoDB
 }
 
-func NewNewsService(rdb *redis.Client, mongo *mongo.MongoDB) *NewsService {
+func NewNewsService(redis *redisdb.RedisDB, mongo *mongo.MongoDB) *NewsService {
 	return &NewsService{
-		rdb,
+		redis,
 		mongo,
 	}
 }
