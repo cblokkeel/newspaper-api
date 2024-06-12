@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/cblokkeel/newspaper/internal/db/mongo"
 	weaviatedb "github.com/cblokkeel/newspaper/internal/db/weaviate"
@@ -94,27 +95,11 @@ func (c *RssWorker) Start(ctx context.Context) {
 				continue
 			}
 
-			// Todo store embeding
-			// embeddings, err := c.ai.EmbedText(fmt.Sprintf("article title: %s; description: %s, category: %s, topics: %s", article.Title, article.Desc, article.Category, strings.Join(article.Topics, ",")))
-			// if err != nil {
-			// 	log.Printf("failed to create embedding for new article %s: %+v\n", article.Title, err)
-			// 	continue
-			// }
-			//
-			// data := []entity.Column{
-			// 	entity.NewColumnString(milvus.ArticleIDField, []string{articleObjectID.Hex()}),
-			// 	entity.NewColumnFloatVector(milvus.ArticleVectorField, 1024, [][]float32{
-			// 		embeddings,
-			// 	}),
-			// 	entity.NewColumnFloat("publish_date", []float32{
-			// 		float32(article.Published.Unix()),
-			// 	}),
-			// }
-			//
-			//          if _, err := c.milvus.Client.Insert(context.Background(), milvus.ArticlesCollName, "", data...); err != nil {
-			// 	log.Printf("failed to insert new article in milvus db %s: %+v\n", article.Title, err)
-			// 	continue
-			//          }
+			schema := c.weaviate.Schemas[weaviatedb.ArticlesCollName]
+			if err := schema.Insert(fmt.Sprintf("article title: %s; description: %s, category: %s, topics: %s", article.Title, article.Desc, article.Category, strings.Join(article.Topics, ","))); err != nil {
+				log.Printf("Failed to insert article %s: %+v\n", article.Title, err)
+				continue
+			}
 			log.Printf("Successfully inserted article %s\n", article.Title)
 		}
 	}

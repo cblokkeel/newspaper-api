@@ -1,6 +1,11 @@
 package weaviatedb
 
-import "github.com/weaviate/weaviate/entities/models"
+import (
+	"context"
+
+	"github.com/weaviate/weaviate-go-client/v4/weaviate"
+	"github.com/weaviate/weaviate/entities/models"
+)
 
 const ArticlesCollName = "articles"
 
@@ -13,6 +18,7 @@ const (
 
 type ArticleSchema struct {
 	weaviateClass *models.Class
+	client        *weaviate.Client
 }
 
 func GetArticleSchema() *ArticleSchema {
@@ -47,13 +53,37 @@ func GetArticleSchema() *ArticleSchema {
 	}
 }
 
+func (a *ArticleSchema) SetWeaviateClient(c *weaviate.Client) {
+	a.client = c
+}
+
 // TODO
 func (a *ArticleSchema) Search(d any) (any, error) {
 	return nil, nil
 }
 
-// TODO
+type NewArticle struct {
+	Title       string
+	Description string
+	Topics      []string
+	Category    string
+}
+
 func (a *ArticleSchema) Insert(d any) error {
+	article := d.(NewArticle)
+	object := &models.Object{
+		Class: ArticlesCollName,
+		Properties: map[string]any{
+			articleTitleField:       article.Title,
+			articleDescriptionField: article.Description,
+			articleTopicsField:      article.Topics,
+			articleCategoryField:    article.Category,
+		},
+	}
+
+	if _, err := a.client.Batch().ObjectsBatcher().WithObjects(object).Do(context.Background()); err != nil {
+		return err
+	}
 	return nil
 }
 
