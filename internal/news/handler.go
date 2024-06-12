@@ -16,7 +16,7 @@ func NewNewsHandler(svc *NewsService) *NewsHandler {
 	}
 }
 
-func (h *NewsHandler) Mount(fiber *fiber.App) {
+func (h *NewsHandler) Mount(fiber fiber.Router) {
 	group := fiber.Group("/news")
 	group.Get("/", h.HandleGetNews)
 	group.Get("/sources", h.HandleGetSources)

@@ -1,34 +1,38 @@
-package rsscron
+package workers
 
 import (
 	"context"
 	"fmt"
 	"log"
 
+	"github.com/cblokkeel/newspaper/internal/db/mongo"
+	weaviatedb "github.com/cblokkeel/newspaper/internal/db/weaviate"
 	"github.com/mmcdole/gofeed"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
-
-	"github.com/cblokkeel/newspaper/internal/db/mongo"
-	weaviatedb "github.com/cblokkeel/newspaper/internal/db/weaviate"
 )
 
-const feeds_coll = "feeds"
-
-type RSSCron struct {
-	mongo  *mongo.MongoDB
-    weaviate *weaviatedb.WeaviateDB
+type RssWorker struct {
+	mongo    *mongo.MongoDB
+	weaviate *weaviatedb.WeaviateDB
 }
 
-func NewRSSCron(mongo *mongo.MongoDB, weaviate *weaviatedb.WeaviateDB) *RSSCron {
-	return &RSSCron{
+// TODO externalize
+const feeds_coll = "feeds"
+
+func NewRssWorker(mongo *mongo.MongoDB, weaviate *weaviatedb.WeaviateDB) *RssWorker {
+	return &RssWorker{
 		mongo,
-        weaviate,
+		weaviate,
 	}
 }
 
-func (c *RSSCron) Start(ctx context.Context) {
+func (c *RssWorker) Periodicity() string {
+	return "@every 1h"
+}
+
+func (c *RssWorker) Start(ctx context.Context) {
 	cursor, err := c.mongo.Find(ctx, feeds_coll, bson.M{}, options.Find())
 	if err != nil {
 		log.Fatalf("Failed to fetch feeds: %+v", err)
@@ -62,7 +66,7 @@ func (c *RSSCron) Start(ctx context.Context) {
 				imgLink = item.Image.URL
 			}
 			article := &mongo.ArticleModel{
-                ID: primitive.NewObjectID(),
+				ID:        primitive.NewObjectID(),
 				Title:     item.Title,
 				Desc:      item.Description,
 				Link:      item.Link,
@@ -90,7 +94,7 @@ func (c *RSSCron) Start(ctx context.Context) {
 				continue
 			}
 
-            // Todo store embeding
+			// Todo store embeding
 			// embeddings, err := c.ai.EmbedText(fmt.Sprintf("article title: %s; description: %s, category: %s, topics: %s", article.Title, article.Desc, article.Category, strings.Join(article.Topics, ",")))
 			// if err != nil {
 			// 	log.Printf("failed to create embedding for new article %s: %+v\n", article.Title, err)
@@ -107,11 +111,11 @@ func (c *RSSCron) Start(ctx context.Context) {
 			// 	}),
 			// }
 			//
-   //          if _, err := c.milvus.Client.Insert(context.Background(), milvus.ArticlesCollName, "", data...); err != nil {
+			//          if _, err := c.milvus.Client.Insert(context.Background(), milvus.ArticlesCollName, "", data...); err != nil {
 			// 	log.Printf("failed to insert new article in milvus db %s: %+v\n", article.Title, err)
 			// 	continue
-   //          }
-            log.Printf("Successfully inserted article %s\n",  article.Title)
+			//          }
+			log.Printf("Successfully inserted article %s\n", article.Title)
 		}
 	}
 }

@@ -48,8 +48,8 @@ func GetArticleSchema() *ArticleSchema {
 }
 
 // TODO
-func (a *ArticleSchema) Search(d any) error {
-	return nil
+func (a *ArticleSchema) Search(d any) (any, error) {
+	return nil, nil
 }
 
 // TODO

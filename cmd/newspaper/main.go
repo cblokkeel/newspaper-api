@@ -1,9 +1,7 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"log"
 	"os"
 
 	"github.com/cblokkeel/newspaper/internal/categories"
@@ -12,7 +10,7 @@ import (
 	weaviatedb "github.com/cblokkeel/newspaper/internal/db/weaviate"
 	"github.com/cblokkeel/newspaper/internal/httpsrv"
 	"github.com/cblokkeel/newspaper/internal/news"
-	rsscron "github.com/cblokkeel/newspaper/internal/rss_cron"
+	"github.com/cblokkeel/newspaper/internal/workers"
 	"github.com/gofiber/fiber/v2"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/robfig/cron"
@@ -33,23 +31,8 @@ func newFiber(handlers []httpsrv.Handler) *fiber.App {
 	return app
 }
 
-// Temp
-func newCron(mongo *mongo.MongoDB, weaviate *weaviatedb.WeaviateDB, app *fiber.App) {
-	rssCron := rsscron.NewRSSCron(mongo, weaviate)
-	c := cron.New()
-	err := c.AddFunc("@every 1h", func() {
-		rssCron.Start(context.Background())
-	})
-	if err != nil {
-		log.Fatalf("Error scheduling rss cron job: %+v", err)
-	}
-	c.Start()
-	defer c.Stop()
-	app.Get("/cron/rss", func(fc *fiber.Ctx) error {
-		fmt.Println("Starting")
-		rssCron.Start(fc.Context())
-		return fc.SendString("Job done")
-	})
+func apiRouter(app *fiber.App) fiber.Router {
+	return app.Group("/api")
 }
 
 func AsHandler(h any) any {
@@ -60,26 +43,56 @@ func AsHandler(h any) any {
 	)
 }
 
+func AsWorker(w any) any {
+	return fx.Annotate(
+		w,
+		fx.As(new(workers.Worker)),
+		fx.ResultTags(`group:"workers"`),
+	)
+}
+
+func AsWeaviateSchema(s any) any {
+	return fx.Annotate(
+		s,
+		fx.As(new(weaviatedb.WeaviateSchema)),
+		fx.ResultTags(`group:"w_schemas"`),
+	)
+}
+
 func main() {
 	fx.New(
 		fx.Provide(
 			// Misc
 			redisdb.NewRedisDB,
 			mongo.NewMongoDB,
+			AsWeaviateSchema(weaviatedb.GetArticleSchema),
+			fx.Annotate(
+				weaviatedb.NewWeaviateDB,
+				fx.ParamTags(`group:"w_schemas"`),
+			),
 			// Http
 			fx.Annotate(
 				newFiber,
 				fx.ParamTags(`group:"handlers"`),
 			),
+			apiRouter,
 			// Svc
 			news.NewNewsService,
 			categories.NewCategoriesService,
 			// Handlers
 			AsHandler(news.NewNewsHandler),
 			AsHandler(categories.NewCategoriesHandler),
+			// Workers
+			AsWorker(workers.NewRssWorker),
+			fx.Annotate(
+				workers.NewWorkerManager,
+				fx.ParamTags(`group:"workers"`),
+			),
+			workers.StartWorkers,
 		),
 		fx.Invoke(func(app *fiber.App) {
-			http(app)
+			go http(app)
 		}),
+		fx.Invoke(func(*cron.Cron) {}),
 	).Run()
 }

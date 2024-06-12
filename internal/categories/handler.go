@@ -16,7 +16,7 @@ func NewCategoriesHandler(svc *CategoriesService) *CategoriesHandler {
 	}
 }
 
-func (h *CategoriesHandler) Mount(fiber *fiber.App) {
+func (h *CategoriesHandler) Mount(fiber fiber.Router) {
 	group := fiber.Group("/categories")
 	group.Get("/", h.GetLocalisedCategories)
 }
