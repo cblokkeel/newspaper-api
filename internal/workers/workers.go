@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	redisdb "github.com/cblokkeel/newspaper/internal/db/redis"
 	"github.com/robfig/cron"
 	"go.uber.org/fx"
 )
@@ -24,7 +25,6 @@ func NewWorkerManager(workers []Worker) *WorkerManager {
 }
 
 func StartWorkers(lc fx.Lifecycle, wm *WorkerManager) *cron.Cron {
-	fmt.Println("ahh okay")
 	cron := cron.New()
 	for _, worker := range wm.Workers {
 		cron.AddFunc(worker.Periodicity(), func() {
@@ -44,4 +44,30 @@ func StartWorkers(lc fx.Lifecycle, wm *WorkerManager) *cron.Cron {
 		},
 	})
 	return cron
+}
+
+type CommonWorker struct {
+	name  string
+	redis *redisdb.RedisDB
+}
+
+func (w *CommonWorker) Lock() error {
+	if err := w.redis.RDB.Set(context.Background(), fmt.Sprintf("%s:lock", w.name), true, 0).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *CommonWorker) Unlock() error {
+	if err := w.redis.RDB.Del(context.Background(), fmt.Sprintf("%s:lock", w.name)).Err(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (w *CommonWorker) IsLocked() bool {
+	if err := w.redis.RDB.Get(context.Background(), fmt.Sprintf("%s:lock", w.name)).Err(); err == nil {
+		return true
+	}
+	return false
 }

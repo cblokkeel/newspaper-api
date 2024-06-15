@@ -29,12 +29,16 @@ func NewWeaviateDB(schemas []WeaviateSchema) *WeaviateDB {
 		log.Fatalf("Weaviate is not available: %v", err)
 	}
 
+	wSchema := make(map[string]WeaviateSchema, len(schemas))
+
 	for _, schema := range schemas {
 		client.Schema().ClassCreator().WithClass(schema.GetSchema()).Do(context.Background())
 		schema.SetWeaviateClient(client)
+		wSchema[schema.GetSchema().Class] = schema
 	}
 
 	return &WeaviateDB{
-		c: client,
+		c:       client,
+		Schemas: wSchema,
 	}
 }

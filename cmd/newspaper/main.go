@@ -90,9 +90,9 @@ func main() {
 			),
 			workers.StartWorkers,
 		),
+		fx.Invoke(func(*cron.Cron) {}),
 		fx.Invoke(func(app *fiber.App) {
 			go http(app)
 		}),
-		fx.Invoke(func(*cron.Cron) {}),
 	).Run()
 }

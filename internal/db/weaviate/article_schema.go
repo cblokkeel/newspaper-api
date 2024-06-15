@@ -63,6 +63,7 @@ func (a *ArticleSchema) Search(d any) (any, error) {
 }
 
 type NewArticle struct {
+	ID          string
 	Title       string
 	Description string
 	Topics      []string
